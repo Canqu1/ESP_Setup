@@ -5,20 +5,23 @@
 #include "DOKHOANGCACH.h"
 #include "CAMBIEN_CHAM.h"
 #include "LED.h"
+#include "LCD_ECU.h"
+#include "MP3.h"
 void processCommand(String command);
 
 void setup() {
   Serial.begin(115200);
   dokhoangcach_setup();
-  LED_setup();
-  CAMBIEN_LINE_SETUP(sensorLINE_1);
-  delay(1000);
-  Serial.println("ESP32 started");
-  Serial.flush();
-
   PWM_BEGIN();
   setVelocity(100);
   stopAll();
+  servo_reset(port_servo_0);
+  servo_reset(port_servo_1);
+  servo_reset(port_servo_2);
+  CAMBIEN_LINE_SETUP(sensorLINE_1);
+  lcd_setup();
+  LED_setup();
+  mp3_setup();
 }
 
 void loop()
@@ -270,7 +273,25 @@ void processCommand(String command) {
     } else {
       Serial.println("INVALID_CMD_FORMAT");
     }
-  } else {
+  } 
+  else if (command.startsWith("PLAY_MP3")) {
+    int firstSpace = command.indexOf(' ');
+    if (firstSpace != -1) {
+      String params = command.substring(firstSpace + 1);
+      int songIndex = params.toInt();
+  
+      // Kiểm tra tính hợp lệ của chỉ mục bài hát
+      if (songIndex >= 0 && songIndex < totalSongs) {
+        mp3Task(songIndex);
+        Serial.println("MP3_OK");
+      } else {
+        Serial.println("INVALID_SONG_INDEX");
+      }
+    } else {
+      Serial.println("INVALID_CMD_FORMAT");
+    }
+  }
+  else {
     Serial.println("UNKNOWN_CMD");
   }
 }

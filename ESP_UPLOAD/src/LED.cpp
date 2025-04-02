@@ -1,5 +1,7 @@
 #include <FastLED.h>
 #include"LED.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #define N 8
 #define DATA_PIN 27
 #define BRIGHTNESS 255
@@ -113,16 +115,16 @@ void ChangePalettePeriodically() {
 }
 
 void runLedEffect(int effectType, unsigned long duration) {
-  unsigned long durationMs = duration * 1000;
   unsigned long startTime = millis();
-  while (millis() - startTime < durationMs) {
+  
+  while (millis() - startTime < duration) {
     switch (effectType) {
       case 0: { // Chase Effect
         static uint8_t colorIndex = 0;
         FillLEDsFromPaletteColors(colorIndex);
         colorIndex += 1; // Tăng chỉ số để tạo hiệu ứng dịch chuyển
         FastLED.show();
-        delay(1000 / UPDATES_PER_SECOND);
+        vTaskDelay((1000 / UPDATES_PER_SECOND) / portTICK_PERIOD_MS);
         break;
 
       }
@@ -132,7 +134,7 @@ void runLedEffect(int effectType, unsigned long duration) {
         FillLEDsFromPaletteColors(colorIndex);
         colorIndex += 1;
         FastLED.show();
-        delay(1000 / UPDATES_PER_SECOND);
+        vTaskDelay((1000 / UPDATES_PER_SECOND) / portTICK_PERIOD_MS);
 
         break;
       }
@@ -147,7 +149,7 @@ void runLedEffect(int effectType, unsigned long duration) {
           }
         }
         FastLED.show();
-        delay(1000 / UPDATES_PER_SECOND);
+        vTaskDelay((1000 / UPDATES_PER_SECOND) / portTICK_PERIOD_MS);
         break;
       }
       case 3: { // Black and White Striped Palette
@@ -156,7 +158,7 @@ void runLedEffect(int effectType, unsigned long duration) {
         FillLEDsFromPaletteColors(colorIndex);
         colorIndex += 1;
         FastLED.show();
-        delay(1000 / UPDATES_PER_SECOND);
+        vTaskDelay((1000 / UPDATES_PER_SECOND) / portTICK_PERIOD_MS);
         break;
       }
       case 4: { // Purple and Green Palette
@@ -165,7 +167,8 @@ void runLedEffect(int effectType, unsigned long duration) {
         FillLEDsFromPaletteColors(colorIndex);
         colorIndex += 1;
         FastLED.show();
-        delay(1000 / UPDATES_PER_SECOND);
+        vTaskDelay((1000 / UPDATES_PER_SECOND) / portTICK_PERIOD_MS);
+
         break;
       }
       default:

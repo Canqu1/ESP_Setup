@@ -7,15 +7,8 @@
 PCF8575 pcf8575(0x20); 
 // Thư viện TFT_eSPI
 TFT_eSPI tft = TFT_eSPI();
-int trangHienTai = 1;
-int mucMenu = 1;
-volatile boolean NUT_NHAN = false; // Cờ tổng hợp: true nếu có nút được nhấn
-
-#define INT_PIN 0 // Chân GPIO của ESP32 kết nối với chân INT của PCF8575
-
-
-
-
+int trangHienTai = 1; // Khởi tạo ở trang 1
+int mucMenu = 0;      // Không chọn mục nào
  boolean trangThaiNutLen = false;
  boolean trangThaiNutOk = false;
  boolean trangThaiNutXuong = false;
@@ -255,16 +248,8 @@ int loop_botton(int &trangHienTai ,int &mucMenu ) {
   char buffer_menu5[5][20] = {"Brightness", "Sleep Timer", "Learning Mode", "Factory Reset"};
   
   char (*buffers[5])[20] = {buffer_menu1, buffer_menu2, buffer_menu3, buffer_menu4, buffer_menu5};
-  void IRAM_ATTR ISR_PCF8575() {
-    // Chỉ kiểm tra các chân nút nhấn (P0-P3), không quan tâm cảm biến (P4-P7)
-    if (!pcf8575.digitalRead(nutLen) || !pcf8575.digitalRead(nutOk) ||
-        !pcf8575.digitalRead(nutXuong) || !pcf8575.digitalRead(nutBack)) {
-        NUT_NHAN = true; // Đặt cờ chỉ khi có nút nhấn
-    }
-    // Ngắt từ cảm biến (P4-P7) không ảnh hưởng đến NUT_NHAN
-  }
+  
   void menu(int menu, int line ) {
-    pinMode(INT_PIN, INPUT_PULLUP);
       if (menu >= 1 && menu <= 5) { // Kiểm tra menu hợp lệ
           // Thiết lập phông chữ một lần
           tft.fillScreen(TFT_BLACK);
@@ -347,15 +332,32 @@ int loop_botton(int &trangHienTai ,int &mucMenu ) {
           }
       }
   }
+void lcdTask(void *pvParameters) {
+    static int trangHienTai_now = 0;
+    static int mucMenu_now = -1;
   
-  void lcd_setup() {
- 
+    while (1) {
+      // Gọi hàm xử lý nút
+      loop_botton(trangHienTai, mucMenu);
+  
+      // Chỉ cập nhật giao diện khi có thay đổi
+      if (trangHienTai_now != trangHienTai || mucMenu_now != mucMenu) {
+        menu(trangHienTai, mucMenu);
+        trangHienTai_now = trangHienTai;
+        mucMenu_now = mucMenu;
+      }
+  
+      vTaskDelay(100 / portTICK_PERIOD_MS); // Delay 100ms để nhường CPU
+    }
+  }  
+void lcd_setup() {
+
+Wire.begin();
 pcf8575.begin(0x20);
 pcf8575.pinMode( nutLen, INPUT_PULLUP);
 pcf8575.pinMode( nutXuong, INPUT_PULLUP);
 pcf8575.pinMode( nutOk, INPUT_PULLUP);
 pcf8575.pinMode( nutBack, INPUT_PULLUP);
-
     tft.init();
     tft.fillScreen(TFT_BLACK);
     tft.setRotation(5);
@@ -400,29 +402,6 @@ pcf8575.pinMode( nutBack, INPUT_PULLUP);
   
       delay(50); // Điều chỉnh tốc độ chạy (50ms mỗi bước)
     }
-  
+  xTaskCreate(lcdTask, "LCD Task", 4096, NULL, 1, NULL);
   }
-  
-  void lcd_loop() {
-
-      static int trangHienTai = 1 ;
-      static int mucMenu = 0 ;
-      static int trangHienTai_now = trangHienTai;
-      static int mucMenu_now = mucMenu;
-      loop_botton(trangHienTai, mucMenu);
-      menu(trangHienTai , mucMenu );
-      while (true) {
-        // Khi có ngắt từ nút nhấn (NUT_NHAN = true)
-        while (NUT_NHAN) {
-            loop_botton(trangHienTai, mucMenu);
-            if (trangHienTai_now != trangHienTai || mucMenu_now != mucMenu) {
-                trangHienTai_now = trangHienTai;
-                mucMenu_now = mucMenu;
-                menu(trangHienTai, mucMenu); // Cập nhật màn hình
-            }
-            NUT_NHAN = false; // Reset cờ sau khi xử lý
-        }
-      }
-  }
-  
   

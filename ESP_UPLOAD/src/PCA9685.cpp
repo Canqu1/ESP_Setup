@@ -23,7 +23,6 @@ void servo_port(int port, int goc_bandau, int goc_ketthuc) {
   delay(500);
 }
 
-// Hàm điều khiển motor
 void move_forward_motor(int move_port, int SPEED, int time) {
   SPEED = SPEED * 2.55; // Giới hạn dc từ 0-255
   uint16_t pwmValue = (SPEED * 4095 / 255); // Chuyển đổi và đảo ngược

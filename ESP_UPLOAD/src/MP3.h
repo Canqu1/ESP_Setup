@@ -12,10 +12,15 @@
 #define SD_CS 5    // Chân CS cho SD card
 #define DAC_PIN 25 // Chân DAC1 của ESP32
 
+// Khai báo các biến toàn cục
+extern String songs[20]; // Danh sách bài hát
+extern int totalSongs;    // Tổng số bài hát
+extern int currentSong;   // Bài hát hiện tại
+
 // Prototype các hàm
 void mp3_setup();
 void play(String filePath);
 void StopPlaying();
-void chon_nhac_mp3(int songIndex);
+void mp3Task(int songIndex);
 
 #endif // MP3_H
